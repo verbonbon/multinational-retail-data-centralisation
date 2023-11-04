@@ -5,7 +5,7 @@ from sqlalchemy import inspect
 
 class DatabaseConnector:
     def __init__(self):
-        self.credentials = {}
+        pass
 
 
 def read_db_creds(self):
@@ -48,6 +48,6 @@ def list_db_tables(self):
 conn = DatabaseConnector()
 yaml_data = conn.read_db_creds()
 engine = conn.init_db_engine()
-table_list = conn.list_db_tables()
+table_list1 = conn.list_db_tables()
 
-print(table_list)
+print(table_list1)
