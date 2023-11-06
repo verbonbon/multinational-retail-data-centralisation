@@ -49,14 +49,14 @@ class DataExtractor:
         pass
 
 
-    def read_rds_table(self, db_connector, table_name):
+    def read_rds_table(self, DatabaseConnector, table_name):
         """ This takes in an instance of the DatabaseConnector class 
             and the table name as an argument and returns a pandas DataFrame containing user data
         """
-        engine = db_connector.init_db_engine('db_creds.yaml')
+        engine = DatabaseConnector.init_db_engine('db_creds.yaml')
         query = (f'SELECT * FROM {table_name}')
         df = pd.read_sql_query(query, engine)
         print(df)
         return df
    
-DataExtractor(DatabaseConnector, legacy_users)
+DataExtractor("legacy_users")
