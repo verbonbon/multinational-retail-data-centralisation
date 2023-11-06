@@ -58,5 +58,8 @@ class DataExtractor:
         df = pd.read_sql_query(query, engine)
         print(df)
         return df
-   
-DataExtractor("legacy_users")
+    
+
+database_connector = DatabaseConnector()
+data_extractor = DataExtractor()
+data_extractor.read_rds_table(database_connector, "legacy_users")
