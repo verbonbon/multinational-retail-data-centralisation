@@ -57,10 +57,10 @@ class DatabaseConnector:
             db_table_name = 'dim_store_details'
         elif table_name == 'bucket_product_clean':
             db_table_name = 'dim_products'
-        elif  table_name == 'order_table_clean':
+        elif  table_name == 'orders_data_clean':
             db_table_name = 'orders_table'
         else:
-            db_table_name = 'dim_date_times'
+            db_table_name = 'dim_date_times' # from date_clean
         table.to_sql(db_table_name, connection_engine, if_exists='replace')
 
 

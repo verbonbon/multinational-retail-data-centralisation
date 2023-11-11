@@ -1,11 +1,3 @@
-# Step 6:
-# Create a method called clean_user_data in the DataCleaning class which will perform the cleaning of the user data.
-# You will need clean the user data, look out for:
-# --NULL values,
-# --errors with dates,
-# --incorrectly typed values and
-# --rows filled with the wrong information.
-
 # import yaml
 # import psycopg2
 # from sqlalchemy import create_engine
@@ -238,23 +230,93 @@ class DataCleaning:
         return bucket_product_clean
 
     def clean_orders_data(self): 
+        '''need to create an instance outside of this method, 
+        db_tables_list comes from the database_connector.list_db_table
+        #db_tables_list = database_connector.list_db_tables()
+        #rds_table = de.read_rds_table(database_connector, 'orders_table')
+           in a main.py file
+        '''
         database_connector = du.DatabaseConnector()
-        yaml_data = database_connector.read_db_creds()
-        engine = database_connector.init_db_engine()
+        #yaml_data = database_connector.read_db_creds()
+        #engine = database_connector.init_db_engine()
         table_list = database_connector.list_db_tables()
         print(f'Here are the names of tables: \n{table_list}')
         
-        all_orders = de.read_rds_table(database_connector, 'orders_table')
-        return all_orders
+        data_extractor = de.DataExtractor()
+        orders_data_clean = data_extractor.read_rds_table(database_connector, 'orders_table')
+
+        orders_data_clean = orders_data_clean.drop(['first_name', 'last_name', '1', 'level_0', 'index'], axis=1)
         
-#database_connector = DatabaseConnector()
-#data_extractor = DataExtractor()
+        # Check irregular entries containing alphabetical characters in card_number column; 
+        # credit cards usually have at least 16 digits, but not sure if the shorter ones are incorrect or not
+        orders_data_clean['card_number']= orders_data_clean['card_number'].replace('[\D]', '', regex=True)        
+
+        # Convert product quantity column to numeric data type
+        orders_data_clean['product_quantity']= orders_data_clean['product_quantity'].apply(lambda x: pd.to_numeric(x, errors = 'coerce')).astype('int64')
+
+        # Validate date_uuid and user_uuid column format
+        orders_data_clean['user_uuid'] = orders_data_clean['user_uuid'].apply(lambda x: x if re.match('^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$', str(x)) else np.nan)
+        orders_data_clean['date_uuid'] = orders_data_clean['date_uuid'].apply(lambda x: x if re.match('^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$', str(x)) else np.nan)
+        
+        # Validate store_code and product code columns format
+        orders_data_clean['store_code'] = orders_data_clean['store_code'].apply(lambda x: str(x) if re.match('^[A-Z]{2,3}-[A-Z0-9]{8}$', str(x)) else np.nan)
+        orders_data_clean['product_code'] = orders_data_clean['product_code'].apply(lambda x: str(x) if re.match('^[a-zA-Z][0-9]-[0-9]{5,7}[a-zA-Z]$', str(x)) else np.nan)
+
+        # Drop nan rows, reset index
+        orders_data_clean.dropna(inplace=True, subset=['date_uuid'])
+        orders_data_clean.reset_index(drop=True, inplace=True)
+                       
+        return orders_data_clean
+        
+    def clean_sales_date(self, raw_date_json):
+        
+        # Denote NULL entries as format recognizable by pandas / numpy
+        date_clean = raw_date_json.replace('NULL', np.nan)
+
+        # Convert timestamp column to datatime.time format
+        date_clean['timestamp'] = date_clean['timestamp'].apply(lambda x: pd.to_datetime(x, format='%H:%M:%S', errors='coerce')).dt.time
+
+        # Clean up months column by removing invalid entries
+        date_clean['month'] = date_clean['month'].apply(lambda x: x if pd.to_numeric(x, errors='coerce') in [*range(1,13)] else np.nan)
+
+        # Clean up days column by removing invalid entries
+        date_clean['day'] = date_clean['day'].apply(lambda x: x if pd.to_numeric(x, errors='coerce') in [*range(1,32)] else np.nan)
+
+        # Clean up years column by removing invalid entries
+        date_clean['year'] = date_clean['year'].apply(lambda x: x if pd.to_numeric(x, errors='coerce') in [*range(1980,2024)] else np.nan)
+
+        # Clean up user uuid column by removing entries of invalid length
+        date_clean['date_uuid'] = date_clean['date_uuid'].apply(lambda x: x if re.match('^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$', str(x)) else np.nan)
+
+        # Clean up periods column by removing invalid entries
+        period = ['Morning', 'Midday', 'Evening', 'Late_Hours']
+        date_clean['time_period'] = date_clean['time_period'].apply(lambda x: x if x in period else np.nan)
+
+        # Remove nan values, duplicates and reset index
+        date_clean.dropna(inplace = True, subset=['date_uuid'])
+        date_clean.drop_duplicates(inplace=True)
+        date_clean.reset_index(drop=True, inplace=True)
+
+        return date_clean
+        
+#database_connector = du.DatabaseConnector()
+#db_tables_list = database_connector.list_db_tables()
+#print(db_tables_list)
+#data_extractor = de.DataExtractor()
 #rds_table = data_extractor.read_rds_table(database_connector, 'orders_table')
 
-datacleaning = DataCleaning()
 
-df = datacleaning.clean_orders_data()
+#rds_table_clean= datacleaning.clean_orders_data()
+#print(rds_table_clean.head())
+#data_extractor = DataExtractor()
+
+
+date_json = pd.read_csv('sale_json.csv')    
+datacleaning = DataCleaning()  
+df = datacleaning.clean_sales_date(date_json)
 print(df.head(5))
+
+#df = datacleaning.clean_orders_data()
 
 
 #df_S3product_clean = datacleaning.convert_product_weights(dff2)

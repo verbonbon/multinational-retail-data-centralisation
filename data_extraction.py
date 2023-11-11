@@ -86,16 +86,23 @@ class DataExtractor:
         df_products = pd.read_csv(s3_products['Body'])
         return df_products
 
+    def sales_json_date(self):
+      sales_json_url = 'http://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json'
+      sales_date = requests.get(sales_json_url).json()
+      sales_date_df = pd.DataFrame(sales_date) 
+      return sales_date_df
 
-
-#database_connector = DatabaseConnector()
+database_connector = DatabaseConnector()
 # pdf_link1 = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
 
 
 #data_extractor = DataExtractor()
 #rds_table = data_extractor.read_rds_table(database_connector, 'orders_table')
+#rds_table.to_csv('rds_table.csv', index=False)
 
-#print(rds_table)
+#sale_json = data_extractor.sales_json_date()
+#print(sale_json)
+#sale_json.to_csv('sale_json.csv', index=False)
 
 # pdf_df = data_extractor.retrieve_pdf_data(pdf_link1) # pdf_df is a pd dataframe
 # print(pdf_df.card_provider.unique())
