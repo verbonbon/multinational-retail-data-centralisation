@@ -1,75 +1,96 @@
-# Create a new Python script named data_extraction.py and within it, create a class named DataExtractor.
-# This class will work as a utility class, 
-# in it you will be creating methods that help extract data from different data sources.
-# The methods contained will be fit to extract data from a particular data source, 
-# these sources will include CSV files, an API and an S3 bucket.
 
+import numpy as np
 import pandas as pd
-from tabula import read_pdf
-import requests
-import json
+import re
+pd.options.display.max_columns = None
+pd.options.display.max_rows = None
 
-class DataExtractor:
-    def __init__(self):
-        pass
+df1 = pd.read_csv("df.csv")
 
-    def read_rds_table(self, DatabaseConnector, table_name):
-        """ This takes in an instance of the DatabaseConnector class 
-            and the table name as an argument and returns a pandas DataFrame containing user data
+
+def clean_user_data(df):
+        """This removes null entries into a format pandas can recognize,
+           parses date, removes irregular expression from text, phone numbers,
+           removes invalid uuid entries, removes original index values
         """
-        table_list = DatabaseConnector.list_db_tables()
-        user_table_name = [name for name in table_list if 'user' in name]
-        print(user_table_name)
+        user_table_clean = pd.DataFrame(df.copy())
 
-        database_connector = DatabaseConnector.init_db_engine()
-        query = (f'SELECT * FROM {table_name}')
-        df_sql = pd.read_sql_query(query, database_connector)
-        return df_sql
+        # Replace NULL entries into a format recognisable by pandas in columns
+        # except company, address
+        col_list = ['first_name', 'last_name', 'date_of_birth',
+                    'email_address', 'country', 'join_date',
+                    'country_code', 'phone_number', 'user_uuid']
+        user_table_clean[col_list] =\
+            user_table_clean[col_list].replace('NULL', np.nan)
 
-    def retrieve_pdf_data(self, pdf_link):
-        """
-        This takes in a link to a pdf file as an argument and returns a pandas DataFrame
-        """
-        pdf_file = read_pdf(pdf_link, pages='all')
-        df_pdf = pd.concat(pdf_file, ignore_index=True)
-        return df_pdf
+        # Parse dates in columns: date_of_birth, join_date
+        user_table_clean[['date_of_birth', 'join_date']] =\
+            user_table_clean[['date_of_birth', 'join_date']].\
+            apply(lambda x: pd.to_datetime(x,
+                                           format='%d/%m/%Y', errors='coerce'))
 
-    def list_number_of_stores(self):
-        """
-        This takes in number of stores endpoint and dictionary with api key as arguments
-        and returns information about number of stores
-        """
-        number_of_stores_url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
-        header_api_key = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
-        number_of_stores_dict = requests.get(number_of_stores_url, headers=header_api_key).json()
-        number_of_stores = number_of_stores_dict.get("number_stores")
-        return number_of_stores  # {'statusCode': 200, 'number_stores': 451}
+        user_table_clean['date_of_birth'] =\
+            pd.to_datetime(user_table_clean['date_of_birth'],
+                           format='%d/%m/%Y', errors='coerce').dt.date
 
-    def retrieve_stores_data(self, number_of_stores):
-        """
-        This takes in endpoint (on number of stores) as an argument,
-        extract all the stores from the API,
-        and returns a pandas DataFrame about the stores
-        """
-        retrieve_stores_url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/'
-        header_api_key = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
-        stores_data = []
-        for each_store in range(number_of_stores):
-            extract_all_stores = requests.get(retrieve_stores_url + f'{each_store}', headers=header_api_key).json()
-            column_heading = extract_all_stores.keys()
-            stores_data.append(list(extract_all_stores.values()))
-        df_stores = pd.DataFrame((stores_data), columns=column_heading)
-        return df_stores
+        # Remove time zone
+        #user_table_clean['date_of_birth'] =\
+        #    user_table_clean['date_of_birth'].dt.tz_localize(None)
+        #user_table_clean['join_date'] =\
+        #    user_table_clean['join_date'].dt.tz_localize(None)
 
+        # Remove all non-letters in the first_name, last_name columns
+        user_table_clean[['first_name', 'last_name']] =\
+            user_table_clean[['first_name', 'last_name']].\
+            replace('[^a-zA-Z-]', "", regex=True)
 
-# database_connector = DatabaseConnector()
-# pdf_link1 = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
+        # Remove all non-letters in the address, company columns
+        # (keeping the white space between words)
+        user_table_clean[['address', 'company']] =\
+            user_table_clean[['address', 'company']].\
+            replace('[^A-Za-z0-9\s]+', "", regex=True)
 
-data_extractor = DataExtractor()
-# pdf_df = data_extractor.retrieve_pdf_data(pdf_link1) # pdf_df is a pd dataframe
-# print(pdf_df.card_provider.unique())
+        # Remove all new lines in address
+        user_table_clean['address'] =\
+            user_table_clean['address'].replace('\n', ' ')
 
-store_count = data_extractor.list_number_of_stores()
-print(f'The number of stores: {store_count}')
-stores_pd_data1 = data_extractor.retrieve_stores_data(store_count)
-print(stores_pd_data1.head(5))
+        # Remove invalid email entry
+        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+        user_table_clean.email_address =\
+            user_table_clean.email_address.\
+            apply(lambda x: x if re.match(email_pattern, str(x)) else np.nan)
+
+        # Remove entries with incorrect country and country code input
+        countries = ['United Kingdom', 'United States', 'Germany']
+        country_codes = ['GB', 'US', 'DE']
+        user_table_clean.country =\
+            user_table_clean.country.\
+                apply(lambda x: x if x in countries else np.nan)
+        user_table_clean.country_code =\
+            user_table_clean.country_code.\
+            apply(lambda x: x if
+                  x in country_codes else ('GB' if 'GB' in str(x) else np.nan))
+
+        # Convert country_code to category
+        user_table_clean['country_code'] =\
+            user_table_clean['country_code'].astype('category')
+
+        # Check if user uuid conforms with standard format and length
+        user_table_clean.user_uuid =\
+            user_table_clean.user_uuid.\
+            apply(lambda x: x if
+                  re.match('^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$', str(x)) else np.nan)
+
+        # Clean column with phone number
+        user_table_clean.phone_number =\
+            user_table_clean.phone_number.\
+            replace('[\D]', '', regex=True).str[-10:].str.lstrip('0')
+
+        # Drop old index column and resetting index
+        user_table_clean.drop('index', axis=1, inplace=True)
+        user_table_clean.dropna(inplace=True, subset=['user_uuid'])
+        user_table_clean.reset_index(drop=True, inplace=True)
+
+        print(user_table_clean)
+
+clean_user_data(df1.head(5))
