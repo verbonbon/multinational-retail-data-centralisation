@@ -24,13 +24,16 @@ def clean_user_data(df):
             user_table_clean[col_list].replace('NULL', np.nan)
 
         # Parse dates in columns: date_of_birth, join_date
-        user_table_clean['date_of_birth'] =\
-            pd.to_datetime(user_table_clean['date_of_birth'],
-                           format='%d/%m/%Y', errors='coerce').dt.date
+        user_table_clean[['date_of_birth', 'join_date']] =\
+            user_table_clean[['date_of_birth', 'join_date']].\
+            apply(lambda x: pd.to_datetime(x,
+                                           format='%d/%m/%Y', errors='coerce'))
 
+        # Remove time zone
+        user_table_clean['date_of_birth'] =\
+            user_table_clean['date_of_birth'].dt.tz_localize(None)
         user_table_clean['join_date'] =\
-            pd.to_datetime(user_table_clean['join_date'],
-                           format='%d/%m/%Y', errors='coerce').dt.date
+            user_table_clean['join_date'].dt.tz_localize(None)
 
         # Remove all non-letters in the first_name, last_name columns
         user_table_clean[['first_name', 'last_name']] =\
@@ -88,5 +91,7 @@ def clean_user_data(df):
 
 
 clean = clean_user_data(df1)
-print(clean)
-print(clean.describe())
+#print(clean)
+print(f'This is the local csv data type (pre clean): \n {df1.dtypes}')
+print(f'This is the local csv data type (post clean): \n {clean.dtypes}')
+print(clean.head(5))

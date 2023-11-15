@@ -27,13 +27,16 @@ class DataCleaning:
             user_table_clean[col_list].replace('NULL', np.nan)
 
         # Parse dates in columns: date_of_birth, join_date
-        user_table_clean['date_of_birth'] =\
-            pd.to_datetime(user_table_clean['date_of_birth'],
-                           format='%d/%m/%Y', errors='coerce').dt.date
+        user_table_clean[['date_of_birth', 'join_date']] =\
+            user_table_clean[['date_of_birth', 'join_date']].\
+            apply(lambda x: pd.to_datetime(x,
+                                           format='%d/%m/%Y', errors='coerce'))
 
+        # Remove time zone
+        user_table_clean['date_of_birth'] =\
+            user_table_clean['date_of_birth'].dt.tz_localize(None)
         user_table_clean['join_date'] =\
-            pd.to_datetime(user_table_clean['join_date'],
-                           format='%d/%m/%Y', errors='coerce').dt.date          
+            user_table_clean['join_date'].dt.tz_localize(None)
 
         # Remove all non-letters in the first_name, last_name columns
         user_table_clean[['first_name', 'last_name']] =\
@@ -460,4 +463,5 @@ class DataCleaning:
 if __name__ == '__main__':
     data_cleaning = DataCleaning()
     testing = data_cleaning.test_code()
-    print(testing.describe())
+    print(f'This is the extracted data type (post clean): \n {testing.dtypes}')
+    print(testing.head(5))
