@@ -91,6 +91,10 @@ def clean_user_data(df):
         user_table_clean.dropna(inplace=True, subset=['user_uuid'])
         user_table_clean.reset_index(drop=True, inplace=True)
 
-        print(user_table_clean)
+        print(user_table_clean.head(5))
 
-clean_user_data(df1.head(5))
+
+clean = clean_user_data(df1)
+print(clean)
+print(type(clean))
+
