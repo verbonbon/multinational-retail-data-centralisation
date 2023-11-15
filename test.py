@@ -24,20 +24,13 @@ def clean_user_data(df):
             user_table_clean[col_list].replace('NULL', np.nan)
 
         # Parse dates in columns: date_of_birth, join_date
-        user_table_clean[['date_of_birth', 'join_date']] =\
-            user_table_clean[['date_of_birth', 'join_date']].\
-            apply(lambda x: pd.to_datetime(x,
-                                           format='%d/%m/%Y', errors='coerce'))
-
         user_table_clean['date_of_birth'] =\
             pd.to_datetime(user_table_clean['date_of_birth'],
                            format='%d/%m/%Y', errors='coerce').dt.date
 
-        # Remove time zone
-        #user_table_clean['date_of_birth'] =\
-        #    user_table_clean['date_of_birth'].dt.tz_localize(None)
-        #user_table_clean['join_date'] =\
-        #    user_table_clean['join_date'].dt.tz_localize(None)
+        user_table_clean['join_date'] =\
+            pd.to_datetime(user_table_clean['join_date'],
+                           format='%d/%m/%Y', errors='coerce').dt.date
 
         # Remove all non-letters in the first_name, last_name columns
         user_table_clean[['first_name', 'last_name']] =\
@@ -91,10 +84,9 @@ def clean_user_data(df):
         user_table_clean.dropna(inplace=True, subset=['user_uuid'])
         user_table_clean.reset_index(drop=True, inplace=True)
 
-        print(user_table_clean.head(5))
+        return (user_table_clean.head(5))
 
 
 clean = clean_user_data(df1)
 print(clean)
-print(type(clean))
-
+print(clean.describe())

@@ -27,20 +27,13 @@ class DataCleaning:
             user_table_clean[col_list].replace('NULL', np.nan)
 
         # Parse dates in columns: date_of_birth, join_date
-        user_table_clean[['date_of_birth', 'join_date']] =\
-            user_table_clean[['date_of_birth', 'join_date']].\
-            apply(lambda x: pd.to_datetime(x,
-                                           format='%d/%m/%Y', errors='coerce'))
-
         user_table_clean['date_of_birth'] =\
             pd.to_datetime(user_table_clean['date_of_birth'],
                            format='%d/%m/%Y', errors='coerce').dt.date
 
-        # Remove time zone
-        #user_table_clean['date_of_birth'] =\
-        #    user_table_clean['date_of_birth'].dt.tz_localize(None)
-        #user_table_clean['join_date'] =\
-        #    user_table_clean['join_date'].dt.tz_localize(None)
+        user_table_clean['join_date'] =\
+            pd.to_datetime(user_table_clean['join_date'],
+                           format='%d/%m/%Y', errors='coerce').dt.date          
 
         # Remove all non-letters in the first_name, last_name columns
         user_table_clean[['first_name', 'last_name']] =\
@@ -244,8 +237,8 @@ class DataCleaning:
         # (remove entries not starting with a number)
         product_clean['weight'] =\
             product_clean['weight'].apply(lambda x: x if
-                                                 re.match('^[0-9]', str(x))
-                                                 else np.nan)
+                                          re.match('^[0-9]', str(x))
+                                          else np.nan)
         # Trying to remove the white space in 6 x 400g, but didn't work
         product_clean['weight'] =\
             product_clean['weight'].str.strip()
@@ -460,12 +453,11 @@ class DataCleaning:
         table_name = 'legacy_users'
         user_data = data_extractor.read_rds_table(database_connector,
                                                   table_name)
-        user_data_clean = data_cleaning.clean_user_data(user_data)
-        print(f'Here is first 5 lines of the clean user data:\
-              \n {user_data_clean.head(5)}')
+        user_data_clean1 = data_cleaning.clean_user_data(user_data)
+        return user_data_clean1
 
-   
+
 if __name__ == '__main__':
     data_cleaning = DataCleaning()
     testing = data_cleaning.test_code()
-    print(testing)
+    print(testing.describe())
