@@ -43,9 +43,8 @@ class DatabaseConnector:
         return table_list
 
     def upload_to_db(self, table, table_name):
-        """xxxxxxx
-           This lists all the tables in the database,
-           to show which tables the data can be extracted from
+        """This upload the cleaned table to the sales_data database
+        The arguments are table and its name in '', e.g., upload_to_db(user_table_clean, 'user_table_clean')
         """
         connection_engine = self.init_db_engine()
         connection_engine.connect()
@@ -55,20 +54,14 @@ class DatabaseConnector:
             db_table_name = 'dim_card_details'
         elif table_name == 'stores_clean':
             db_table_name = 'dim_store_details'
-        elif table_name == 'bucket_product_clean':
+        elif table_name == 'product_clean2':
             db_table_name = 'dim_products'
         elif  table_name == 'orders_data_clean':
             db_table_name = 'orders_table'
         else:
-            db_table_name = 'dim_date_times' # from date_clean
+            db_table_name = 'dim_date_times'  # from date_clean
         table.to_sql(db_table_name, connection_engine, if_exists='replace')
 
 
-
-     
-#database_connector = DatabaseConnector()
-#yaml_data = database_connector.read_db_creds()
-#engine = database_connector.init_db_engine()
-#table_list1 = database_connector.list_db_tables()
-
-#print(table_list1)
+if __name__ == '__main__':
+    DatabaseConnector().init_db_engine()
