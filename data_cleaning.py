@@ -201,9 +201,14 @@ class DataCleaning:
         store_data_clean.store_type = store_data_clean.store_type.\
             apply(lambda x: x if x in store_types else np.nan)
 
-        # Check and clean locality 
+        # Check and clean locality
         store_data_clean.locality.replace('[\d]',
                                           np.nan, regex=True, inplace=True)
+
+        # Check and clean staff_numbers
+        store_data_clean.staff_numbers.replace('[\D]',
+                                               np.nan, regex=True,
+                                               inplace=True)
 
         # Check store_code against specific format
         # (two leters, hypen, followed by 8 letter/number)
