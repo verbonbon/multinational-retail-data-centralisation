@@ -9,7 +9,7 @@ class DatabaseConnector:
 
     def read_db_creds(self):
         """This reads the credentials from the yaml file
-           and return a dictionary of the credentials.
+           and return a dictionary of the credentials
         """
         with open('db_creds.yaml') as credentials_yaml:
             self.credentials_dict = yaml.safe_load(credentials_yaml)
@@ -17,7 +17,7 @@ class DatabaseConnector:
 
     def init_db_engine(self):
         """This reads the credentials from the return of read_db_creds
-           and initialise and return an sqlalchemy database engine.
+           and initialise and return an sqlalchemy database engine
         """
         self.credentials_read = self.read_db_creds()
         self.credentials = self.credentials_read['credentials']
@@ -43,25 +43,30 @@ class DatabaseConnector:
         return table_list
 
     def upload_to_db(self, table, table_name):
-        """This upload the cleaned table to the sales_data database
-        The arguments are table and its name in '', e.g., upload_to_db(user_table_clean, 'user_table_clean')
+        """This uploads the cleaned table to the sales_data database
+           The arguments are table and its name in quotation marks, 
+           e.g., upload_to_db(user_table_clean, 'user_table_clean')
         """
-        connection_engine = self.init_db_engine()
-        connection_engine.connect()
-        if table_name == 'user_table_clean':
+        DATABASE_TYPE = 'postgresql'
+        DBAPI = 'psycopg2'
+        HOST = 'localhost'
+        USER = 'postgres'
+        PASSWORD = 'password'
+        DATABASE = 'sales_data'
+        PORT = 5432
+        engine_upload = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
+        engine_upload.connect()
+
+        if table_name == 'user_data_clean':
             db_table_name = 'dim_users'
-        elif table_name == 'cards_data_clean':
+        elif table_name == 'card_data_clean':
             db_table_name = 'dim_card_details'
-        elif table_name == 'stores_clean':
+        elif table_name == 'store_data_clean':
             db_table_name = 'dim_store_details'
-        elif table_name == 'product_clean2':
+        elif table_name == 'product_data_clean':
             db_table_name = 'dim_products'
-        elif  table_name == 'orders_data_clean':
+        elif table_name == 'order_data_clean':
             db_table_name = 'orders_table'
         else:
-            db_table_name = 'dim_date_times'  # from date_clean
-        table.to_sql(db_table_name, connection_engine, if_exists='replace')
-
-
-if __name__ == '__main__':
-    DatabaseConnector().init_db_engine()
+            db_table_name = 'dim_date_times'  # from sales_date_clean
+        table.to_sql(db_table_name, engine_upload, if_exists='replace')
