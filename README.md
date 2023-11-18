@@ -26,7 +26,7 @@ Demonstrations of the queries can be found in the [SQL_business_query.sql file](
 <br/>
 
 ##    How to install? <a name="install"></a>
-Clone [this project](https://github.com/verbonbon/multinational-retail-data-centralisation) 
+Clone [this project](https://github.com/verbonbon/multinational-retail-data-centralisation)<br/>  
 <br/> 
 Run the following on your terminal to extract, clean, and create the database: <br/> 
 [python3 main.py](https://github.com/verbonbon/multinational-retail-data-centralisation/blob/main/main.py) <br/>
