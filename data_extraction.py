@@ -41,7 +41,7 @@ class DataExtractor:
 
     def list_number_of_stores(self):
         """This uses number of stores endpoint
-        and dictionary with api key 
+        and dictionary with api key
         and returns information about number of stores
         """
         number_of_stores_url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
