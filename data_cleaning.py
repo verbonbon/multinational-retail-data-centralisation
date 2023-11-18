@@ -123,7 +123,7 @@ class DataCleaning:
                   providers[row['card_provider']]) else np.nan, axis=1)
         card_data_clean.card_number =\
             card_data_clean.card_number.apply(lambda x: str(x) if len(str(x))
-                                              in range(12, 20) else np.nan)
+                                              in range(9, 20) else np.nan)
 
         # parse date in columns with card expiry date
         # and confirmed date of payment
@@ -212,9 +212,11 @@ class DataCleaning:
 
         # Check store_code against specific format
         # (two leters, hypen, followed by 8 letter/number)
-        store_data_clean.store_code = store_data_clean.store_code.\
-            apply(lambda x: x if
-                  re.match('^[A-Z]{2}-[A-Z0-9]{8}$', str(x)) else np.nan)
+        # there are actually some codes that starts with three letters
+        # so not running this
+        # store_data_clean.store_code = store_data_clean.store_code.\
+        #    apply(lambda x: x if
+        #          re.match('^[A-Z]{2}-[A-Z0-9]{8}$', str(x)) else np.nan)
 
         # Drop nan values, lat column (because it has almost no data),
         # reset index
@@ -280,9 +282,10 @@ class DataCleaning:
             round(product_clean["weight_float"] *
                   product_clean["weight_conversion"], 1)
 
+        product_clean['weight'] = product_clean["weight_kg"]
+
         # Remove columns no longer needed
-        product_clean.drop(['weight_float',
-                            'weight_unit', 'weight_conversion'],
+        product_clean.drop(['weight_unit', 'weight_conversion'],
                            axis=1, inplace=True)
         product_clean.dropna(inplace=True, subset=['weight'])
 
