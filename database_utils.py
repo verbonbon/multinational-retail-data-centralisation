@@ -11,6 +11,10 @@ class DatabaseConnector:
         """This reads the credentials from the yaml file
            and return a dictionary of the credentials
         """
+        #TODO: This 'db_creds.yaml' could be replaced with a parameter instead. 
+        # e.g. def read_db_creds(self, config_file_name)
+        # with open(config_file_name) as credentials_yaml 
+        # This allows you to pass in any config file name and read it in as a .yaml file. 
         with open('db_creds.yaml') as credentials_yaml:
             self.credentials_dict = yaml.safe_load(credentials_yaml)
         return self.credentials_dict
@@ -21,6 +25,7 @@ class DatabaseConnector:
         """
         self.credentials_read = self.read_db_creds()
         self.credentials = self.credentials_read['credentials']
+        #TODO: lines 29-30 can be placed inside the db_creds.yaml file to avoid hard-coding them in this method
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
         USER = self.credentials['RDS_USER']
@@ -47,16 +52,19 @@ class DatabaseConnector:
            The arguments are table and its name in quotation marks, 
            e.g., upload_to_db(user_table_clean, 'user_table_clean')
         """
+        #FIXME: lines 51 - 57 should be placed inside of a .yaml file this is a big security risk. 
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
         HOST = 'localhost'
         USER = 'postgres'
-        PASSWORD = 'password'
+        PASSWORD = 'xxxx'
         DATABASE = 'sales_data'
         PORT = 5432
         engine_upload = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
         engine_upload.connect()
-
+        #TODO: this if/elif statement is overengineered and will be harder to maintain in the long run. 
+        # I do understand why it's used here to be specific with what table is uploaded,
+        # but you can already specify the table name in df.to_sql() so I find that the if/elifs are redundant here. 
         if table_name == 'user_data_clean':
             db_table_name = 'dim_users'
         elif table_name == 'card_data_clean':
